@@ -1,36 +1,61 @@
+import cryptography.utils
 import logging
 import os
-from ftplib import FTP
+import pysftp
+import warnings
+
+warnings.simplefilter("ignore", cryptography.utils.CryptographyDeprecationWarning)
 
 
-class FtpHandler:
+class SftpHandler:
 
     """
-    This class consolidates the FTP functions.
+    This class consolidates the SFTP functions.
     """
 
     def __init__(self, host, user, pwd):
         """
-        Initializing the method will return an FTP connection. Enforce active mode as this seems to be required for FTP.
+        Initializing the method will return an SFTP handler.
 
-        :param host: FTP Host
-        :param user: FTP Username
-        :param pwd: FTP Password
+        :param host: Host
+        :param user: Username
+        :param pwd: Password
         """
-        self.ftp = FTP()
-        self.ftp.set_pasv(False)
-        self.ftp.connect(host=host, timeout=10)
-        self.ftp.login(user=user, passwd=pwd)
-        logging.debug("FTP Connection to {host} is configured".format(host=host))
+        # Loads .ssh/known_hosts
+        self.host = host
+        self.cnopts = pysftp.CnOpts()
+        if self.cnopts.hostkeys.lookup(host) is None:
+            self.get_hostkeys(user, pwd)
+        # At this point the hostkeys are available for the host.
+        self.sftp = pysftp.Connection(self.host, username=user, password=pwd, cnopts=self.cnopts)
+        return
+
+    def get_hostkeys(self, user, pwd):
+        """
+        This method gets the hostkeys for the server.
+
+        :param user: Username for SFTP connection
+        :param pwd: for SFTP connection
+        :return:
+        """
+        # Backup loaded .ssh/known_hosts file
+        hostkeys = self.cnopts.hostkeys
+        # And do not verify host key of the new host
+        self.cnopts.hostkeys = None
+        with pysftp.Connection(self.host, username=user, password=pwd, cnopts=self.cnopts) as sftp:
+            logging.info("Connected to new host {}, caching its hostkey".format(self.host))
+            hostkeys.add(self.host, sftp.remote_server_key.get_name(), sftp.remote_server_key)
+            hostkeys.save(pysftp.helpers.known_hosts())
         return
 
     def close_connection(self):
         """
-        Close the FTP Connection.
+        Close the SFTP Connection.
+
         :return:
         """
-        self.ftp.quit()
-        logging.debug("FTP Connection closed.")
+        self.sftp.close()
+        logging.debug("SFTP Connection closed.")
         return
 
     def get_content(self):
@@ -98,15 +123,15 @@ class FtpHandler:
         # Get Filename from file pointer
         (filepath, filename) = os.path.split(file)
         # Remove the File
-        self.ftp.delete(filename)
+        self.sftp.remove(filename)
         return
 
-    def set_dir(self, dir):
+    def set_dir(self, dirname):
         """
         This method will change to the directory on the remote site. Directory can have subdirectories, / as separator.
 
-        :param dir:
+        :param dirname:
         :return:
         """
-        self.ftp.cwd(dir)
+        self.sftp.cwd(dirname)
         return
