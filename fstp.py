@@ -6,6 +6,7 @@ import cryptography.utils
 import datetime
 import logging
 import os
+import paramiko
 import platform
 import pysftp
 import warnings
@@ -31,19 +32,19 @@ ftpdir = cfg[cfg_section]["dir"]
 # Loads .ssh/known_hosts
 cnopts = pysftp.CnOpts()
 if cnopts.hostkeys.lookup(host) is None:
-    print("New host - will accept any host key")
+    logging.info("New host {} - will accept any host key".format(host))
     # Backup loaded .ssh/known_hosts file
     hostkeys = cnopts.hostkeys
     # And do not verify host key of the new host
     cnopts.hostkeys = None
+else:
+    hostkeys = None
 
 with pysftp.Connection(host, username=user, password=pwd, cnopts=cnopts) as sftp:
-    try:
+    if isinstance(hostkeys, paramiko.hostkeys.HostKeys):
         logging.info("Connected to new host, caching its hostkey")
         hostkeys.add(host, sftp.remote_server_key.get_name(), sftp.remote_server_key)
         hostkeys.save(pysftp.helpers.known_hosts())
-    except NameError:
-        logging.debug("Host Key exists.")
     with sftp.cd(ftpdir):             # temporarily chdir to public
         # sftp.put('/my/local/filename')  # upload file to public/ on remote
         sftp.get('kf')         # get a remote file

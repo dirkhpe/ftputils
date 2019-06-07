@@ -26,8 +26,9 @@ class SftpHandler:
         self.cnopts = pysftp.CnOpts()
         if self.cnopts.hostkeys.lookup(host) is None:
             self.get_hostkeys(user, pwd)
-        # At this point the hostkeys are available for the host.
-        self.sftp = pysftp.Connection(self.host, username=user, password=pwd, cnopts=self.cnopts)
+        else:
+            # At this point the hostkeys are available for the host.
+            self.sftp = pysftp.Connection(self.host, username=user, password=pwd, cnopts=self.cnopts)
         return
 
     def get_hostkeys(self, user, pwd):
@@ -42,10 +43,10 @@ class SftpHandler:
         hostkeys = self.cnopts.hostkeys
         # And do not verify host key of the new host
         self.cnopts.hostkeys = None
-        with pysftp.Connection(self.host, username=user, password=pwd, cnopts=self.cnopts) as sftp:
-            logging.info("Connected to new host {}, caching its hostkey".format(self.host))
-            hostkeys.add(self.host, sftp.remote_server_key.get_name(), sftp.remote_server_key)
-            hostkeys.save(pysftp.helpers.known_hosts())
+        self.sftp = pysftp.Connection(self.host, username=user, password=pwd, cnopts=self.cnopts)
+        logging.info("Connected to new host {}, caching its hostkey".format(self.host))
+        hostkeys.add(self.host, self.sftp.remote_server_key.get_name(), self.sftp.remote_server_key)
+        hostkeys.save(pysftp.helpers.known_hosts())
         return
 
     def close_connection(self):
@@ -60,56 +61,42 @@ class SftpHandler:
 
     def get_content(self):
         """
-        This method will collect the content (list of filenames) from the FTP directory.
+        This method will collect the content (list of filenames) from the SFTP directory.
 
         :return: List of filenames on the remote connection.
         """
-        return self.ftp.nlst()
+        return self.sftp.listdir()
 
-    def load_file(self, file=None, mode="ascii"):
+    def listdir(self):
         """
-        Load file on FTP Server. If file exists already, then overwrite. Note that ascii mode has maximum line length
-        so selecting binary is a better choice.
+        This method collects files on remote directory.
+
+        :return: List of files on the remote directory.
+        """
+        return self.sftp.listdir()
+
+    def load_file(self, file=None):
+        """
+        Load (put) file on SFTP Server. If file exists already, then overwrite.
 
         :param file: Filename (including path) of the file to be loaded.
-        :param mode: Required file transfer mode (ascii or bin, default is ascii)
         :return:
         """
-        logging.debug("Moving file {file} to FTP Server, mode {mode}".format(file=file, mode=mode))
-        # Get Filename from file pointer
-        (filepath, filename) = os.path.split(file)
-        stor_cmd = 'STOR ' + filename
-        # Load the File
-        if mode == "ascii":
-            fh = open(file, mode='r')
-            self.ftp.storlines(stor_cmd, fh)
-        else:
-            fh = open(file, mode='rb')
-            self.ftp.storbinary(stor_cmd, fh)
-        fh.close()
+        logging.debug("Moving file {file} to SFTP Server".format(file=file))
+        self.sftp.put(file)
         return
 
-    def read_file(self, file=None, workdir=None, mode="ascii"):
+    def read_file(self, file=None, workdir=None):
         """
-        Read file on FTP Server and store locally as file on workdir. Note that ascii mode has maximum line length
-        so selecting binary is a better choice.
+        Read (get) file on FTP Server and store locally as file on workdir.
 
         :param file: Filename of the file to be read.
         :param workdir: Local directory to store files that are read.
-        :param mode: Required file transfer mode (ascii or bin, default is ascii)
         :return:
         """
-        logging.debug("Reading file {file} from FTP Server, mode {mode}".format(file=file, mode=mode))
+        logging.debug("Reading file {file} from FTP Server".format(file=file))
         local_file = os.path.join(workdir, file)
-        retr_cmd = 'RETR ' + file
-        # Load the File
-        if mode == "ascii":
-            fh = open(local_file, mode='w')
-            self.ftp.retrlines(retr_cmd, fh.write)
-        else:
-            fh = open(local_file, mode='wb')
-            self.ftp.retrbinary(retr_cmd, fh.write)
-        fh.close()
+        self.sftp.get(file, localpath=local_file)
         return
 
     def remove_file(self, file=None):
