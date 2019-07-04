@@ -2,3 +2,8 @@ pycparser
 six
 cffi
 asn1crypto
+bcrypt
+pyNaCl
+cryptography
+pyasn1
+pynacl
