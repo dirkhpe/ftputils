@@ -5,7 +5,7 @@ RUN adduser -D -u 50001 dirk
 WORKDIR /home/dr
 RUN mkdir /logs
 
-COPY requirements.txt fstp.py ./
+COPY requirements.txt sftp.py ./
 # Alpine Linux requires build environment
 # https://github.com/docker-library/python/issues/312
 # https://github.com/giampaolo/psutil/issues/872
