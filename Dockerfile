@@ -5,7 +5,7 @@ RUN adduser -D -u 50001 dirk
 WORKDIR /home/dr
 RUN mkdir /logs
 
-COPY requirements.txt requirements.txt
+COPY requirements.txt fstp.py ./
 # Alpine Linux requires build environment
 # https://github.com/docker-library/python/issues/312
 # https://github.com/giampaolo/psutil/issues/872
@@ -21,8 +21,8 @@ RUN drenv/bin/pip install --upgrade pip
 RUN drenv/bin/pip install -r requirements.txt
 # RUN apk del .build-deps gcc musl-dev linux-headers alpine-sdk
 
-# COPY properties properties
-# COPY lib lib
+COPY properties properties
+COPY lib lib
 # COPY .env rebuild_sqlite.py get_backup.py murcs_Get.py ./
 # COPY fromflask.py config.py boot.sh .env .flaskenv ./
 # RUN chmod +x get_backup.py
