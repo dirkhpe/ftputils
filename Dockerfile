@@ -15,7 +15,7 @@ COPY requirements.txt requirements.txt
 #  libffi-dev openssl-dev is required for gunicorn
 RUN apk update
 # RUN apk add --no-cache --virtual .build-deps gcc musl-dev linux-headers alpine-sdk
-RUN apk add --no-cache --virtual gcc musl-dev linux-headers alpine-sdk
+RUN apk add --no-cache --virtual openssl-dev libffi-dev gcc musl-dev linux-headers
 RUN python -m venv drenv
 RUN drenv/bin/pip install --upgrade pip
 RUN drenv/bin/pip install -r requirements.txt
