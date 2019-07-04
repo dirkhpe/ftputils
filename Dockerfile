@@ -21,14 +21,14 @@ RUN drenv/bin/pip install -r requirements.txt
 # RUN apk del .build-deps gcc musl-dev linux-headers alpine-sdk
 
 # COPY properties properties
-COPY lib lib
-COPY .env rebuild_sqlite.py get_backup.py murcs_Get.py ./
+# COPY lib lib
+# COPY .env rebuild_sqlite.py get_backup.py murcs_Get.py ./
 # COPY fromflask.py config.py boot.sh .env .flaskenv ./
-RUN chmod +x get_backup.py
+# RUN chmod +x get_backup.py
 
-RUN chown -R 50001:50005 ./
-RUN chown -R 50001:50005 /logs
-USER dirk
+# RUN chown -R 50001:50005 ./
+# RUN chown -R 50001:50005 /logs
+# USER dirk
 
 # EXPOSE 5000
-CMD ["/home/bv/get_backup.py"]
+# CMD ["/home/bv/get_backup.py"]
