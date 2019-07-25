@@ -1,10 +1,10 @@
+#!/home/mowdr/env/dataroom/bin/python
 """
 This script moves csv files from dropserver to apex server for MOW_MDK. After copy the files will be removed from the
 source directory.
 """
 
 import datetime
-import logging
 import os
 from lib import my_env
 from lib import sftp_handler

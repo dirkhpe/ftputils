@@ -1,3 +1,4 @@
+#!/home/mowdr/env/dataroom/bin/python
 """
 This script moves csv files from apex server to dropserver for MOW_MDK or Drupal. After copy the files will be removed
 from the source directory.

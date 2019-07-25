@@ -6,6 +6,5 @@ bcrypt
 pyNaCl
 cryptography
 pyasn1
-pynacl
 paramiko
 pysftp

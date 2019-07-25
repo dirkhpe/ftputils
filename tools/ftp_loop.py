@@ -3,6 +3,7 @@
 This script will create a file, add a timestamp and move the file to an FTP directory. This allows to test FTP
 connections.
 The script runs in a loop for max_cnt times with sleep of wait seconds.
+Use cron instead of ftp_loop.
 """
 import datetime
 import logging
