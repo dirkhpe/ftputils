@@ -34,12 +34,15 @@ sftph.set_dir(from_dir)
 files = sftph.listdir()
 if len(files) > 0:
     for file in files:
-        sftph.read_file(file, workdir=to_dir)
+        try:
+            sftph.read_file(file, workdir=to_dir)
+        except IOError:
+            logging.error("File {} could not be read".format(file))
+        else:
+            logline = "{script};{date};{time}FROM;databestand {file} van de dropserver afgehaald\n".\
+                format(script=script, date=ds, time=ts, file=file)
+            logfh.write(logline)
         sftph.remove_file(file)
-        logline = "{script};{date};{time}FROM;databestand {file} van de dropserver afgehaald\n".format(script=script,
-                                                                                                       date=ds, time=ts,
-                                                                                                       file=file)
-        logfh.write(logline)
 else:
     logline = "{script};{date};{time}FROM;geen databestanden aanwezig.\n".format(script=script, date=ds, time=ts)
     logfh.write(logline)

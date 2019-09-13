@@ -13,10 +13,9 @@ parser = argparse.ArgumentParser(
     description="Move files from Remote Server to local server."
 )
 parser.add_argument('-t', '--target', type=str, required=True,
-                    choices=["MOWMDK", "Drupal"],
+                    choices=["MOWMDK", "Drupal", "MobielVlaanderen"],
                     help='Please provide the target on the Dropserver - select MOWMDK or Drupal')
 parser.add_argument('-d', '--dir', type=str, required=True,
-                    choices=["IN", "OUT"],
                     help='Please provide the target directory on the Dropserver - select IN or OUT')
 args = parser.parse_args()
 
@@ -26,7 +25,7 @@ logging.info("Arguments: {a}".format(a=args))
 # Collect files in from_dir
 cfg_section = args.target
 from_dir = args.dir
-to_dir = cfg["Main"]["apex_bad"]
+to_dir = cfg["Main"]["apex_log"]
 # Connect to server
 host = cfg[cfg_section]["host"]
 user = cfg[cfg_section]["user"]
