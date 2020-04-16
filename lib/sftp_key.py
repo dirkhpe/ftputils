@@ -81,6 +81,14 @@ class SftpHandler:
         """
         return self.sftp.listdir()
 
+    def listdir_attr(self):
+        """
+        This method collects files and attributes on remote directory.
+
+        :return: List of files with attributes on the remote directory.
+        """
+        return self.sftp.listdir_attr()
+
     def load_file(self, file=None):
         """
         Load (put) file on SFTP Server. If file exists already, then overwrite.

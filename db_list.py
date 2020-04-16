@@ -12,6 +12,8 @@ props = dict(
     pkf=cfg['DBDump']["pkf"]
 )
 remote = sftp_key.SftpHandler(**props)
-res = remote.listdir()
-print(res)
+remote.set_dir('log')
+res = remote.listdir_attr()
+for attr in res:
+    print(attr)
 remote.close_connection()
