@@ -12,6 +12,7 @@ import platform
 import sys
 import subprocess
 from datetime import datetime
+from dotenv import load_dotenv
 
 locations = dict(
     Antwerpen=2,
@@ -40,21 +41,23 @@ wegcategorie = dict(
 )
 wegcategorie["hoofrijb en knoop"] = 6
 indicator = dict(
-    filezwaarte_nb = 1100
+    filezwaarte_nb=1100
 )
+
 
 def init_env(projectname, filename):
     """
     This function will initialize the environment: Find and return handle to config file and set-up logging.
+
     :param projectname: Name that will be used to find ini file in properties subdirectory.
     :param filename: Filename (__file__) of the calling script (for logfile).
     :return: config handle
     """
-    projectname = projectname
     modulename = get_modulename(filename)
     config = get_inifile(projectname)
-    my_log = init_loghandler(config, modulename)
-    my_log.info('Start Application')
+    init_loghandler(modulename)
+    os.environ.pop('http_proxy', None)
+    os.environ.pop('https_proxy', None)
     return config
 
 
@@ -84,36 +87,46 @@ def get_config_section(cfg, section):
     return section_dict
 
 
-def init_loghandler(config, modulename):
+def init_loghandler(modulename):
     """
     This function initializes the loghandler. Logfilename consists of calling module name + computername.
-    Logfile directory is read from the project .ini file.
     Format of the logmessage is specified in basicConfig function.
-    This is for Log Handler configuration. If basic log file configuration is required, then use init_logfile.
-    :param config: Reference to the configuration ini file. Directory for logfile should be
-    in section Main entry logdir.
+
     :param modulename: The name of the module. Each module will create it's own logfile.
     :return: Log Handler
     """
-    logdir = config['Main']['logdir']
-    loglevel = config['Main']['loglevel'].upper()
-    computername = platform.node()
+    logdir = os.getenv("LOGDIR")
+    loglevel = os.getenv("LOGLEVEL").upper()
     # Define logfileName
-    logfile = logdir + "/" + modulename + "_" + computername + ".log"
+    logfn = "{module}_{host}.log".format(module=modulename, host=platform.node())
+    logfile = os.path.join(logdir, logfn)
     # Configure the root logger
     logger = logging.getLogger()
     level = logging.getLevelName(loglevel)
     logger.setLevel(level)
     # Get logfiles of 1M
     maxbytes = 1024 * 1024
-    rfh = logging.handlers.RotatingFileHandler(logfile, maxBytes=maxbytes, backupCount=5)
+    rfh = logging.handlers.RotatingFileHandler(logfile, maxBytes=maxbytes, backupCount=5, encoding='utf8')
     # Create Formatter for file
-    formatter_file = logging.Formatter(fmt='%(asctime)s|%(module)s|%(funcName)s|%(lineno)d|%(levelname)s|%(message)s',
-                                       datefmt='%d/%m/%Y|%H:%M:%S')
+    fmt_str = '%(asctime)s|%(name)s|%(module)s|%(funcName)s|%(lineno)d|%(levelname)s|%(message)s'
+    formatter_file = logging.Formatter(fmt=fmt_str, datefmt='%d/%m/%Y|%H:%M:%S')
     # Add Formatter to Rotating File Handler
     rfh.setFormatter(formatter_file)
     # Add Handler to the logger
     logger.addHandler(rfh)
+    # Configure Console Handler
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    formatter_console = logging.Formatter(fmt='%(asctime)s - %(module)s - %(funcName)s - %(lineno)d - %(levelname)s -'
+                                              ' %(message)s',
+                                          datefmt='%H:%M:%S')
+    # Add Formatter to Console Handler
+    ch.setFormatter(formatter_console)
+    logger.addHandler(ch)
+    logging.getLogger('asyncio').setLevel(logging.WARNING)
+    logging.getLogger('botocore').setLevel(logging.WARNING)
+    logging.getLogger('websockets.client').setLevel(logging.WARNING)
+    logging.getLogger('websockets.protocol').setLevel(logging.WARNING)
     return logger
 
 
@@ -121,32 +134,27 @@ def get_inifile(projectname):
     """
     Read Project configuration ini file in subdirectory properties. Config ini filename is the projectname.
     The ini file is located in the properties module, which is sibling of the lib module.
-    @param projectname: Name of the project.
-    @return: Object reference to the inifile.
+    Environment settings defined in .env file are exported as well. The .env file needs to be in the project main
+    directory.
+
+    :param projectname: Name of the project.
+    :return: Object reference to the inifile.
     """
     # Use Project Name as ini file.
-    # TODO: review procedure to get directory name instead of relative properties/ path.
-    if getattr(sys, 'frozen', False):
-        # Running Frozen (pyinstaller executable)
-        configfile = projectname + ".ini"
-    else:
-        # Running Live
-        # properties directory is sibling of lib directory.
-        (filepath_lib, _) = os.path.split(__file__)
-        (filepath, _) = os.path.split(filepath_lib)
-        # configfile = filepath + "/properties/" + projectname + ".ini"
-        configfile = os.path.join(filepath, 'properties', "{p}.ini".format(p=projectname))
+    # properties directory is sibling of lib directory.
+    (filepath_lib, _) = os.path.split(__file__)
+    (filepath, _) = os.path.split(filepath_lib)
+    configfile = os.path.join(filepath, 'properties', "{p}.ini".format(p=projectname))
     ini_config = configparser.ConfigParser()
     try:
         f = open(configfile)
         ini_config.read_file(f)
         f.close()
-    except:
-        e = sys.exc_info()[1]
-        ec = sys.exc_info()[0]
-        log_msg = "Read Inifile not successful: %s (%s)"
-        print(log_msg % (e, ec))
-        sys.exit(1)
+    except FileNotFoundError:
+        # If no Config file defined, then return empty dictionary.
+        ini_config = {}
+    envfile = os.path.join(filepath, ".env")
+    load_dotenv(dotenv_path=envfile, override=True)
     return ini_config
 
 
@@ -211,7 +219,7 @@ def month_year_iter(start_month, start_year):
     """
     ym_start = 12*int(start_year) + int(start_month) - 1
     today = datetime.now()
-    ym_end = 12 * today.year + today.month -1
+    ym_end = 12 * today.year + today.month - 1
     for ym in range(ym_start, ym_end):
         y, m = divmod(ym, 12)
         yield y, m + 1
