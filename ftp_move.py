@@ -33,7 +33,7 @@ ftp_target.set_dir(ftpdir)
 
 res = ftp_source.get_content()
 for file in res:
-    logging.info("Move file {} from source to target")
+    logging.info("Move file {} from source to target".format(file))
     localfile = os.path.join(workdir, file)
     ftp_source.read_file(file, workdir, mode="bin")
     ftp_target.load_file(localfile)

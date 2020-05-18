@@ -12,7 +12,7 @@ props = dict(
     pkf=cfg['DBDump']["pkf"]
 )
 remote = sftp_key.SftpHandler(**props)
-remote.set_dir('log')
+remote.set_dir('IN')
 res = remote.listdir_attr()
 for attr in res:
     print(attr)

@@ -5,6 +5,7 @@ source directory.
 """
 
 import datetime
+import logging
 import os
 from lib import my_env
 from lib import sftp_handler
@@ -37,10 +38,11 @@ if len(files) > 0:
         try:
             sftph.read_file(file, workdir=to_dir)
         except IOError:
-            logging.error("File {} could not be read".format(file))
+            logging.error("Error reading file {}".format(file))
         else:
-            logline = "{script};{date};{time}FROM;databestand {file} van de dropserver afgehaald\n".\
-                format(script=script, date=ds, time=ts, file=file)
+            logline = "{script};{date};{time}FROM;databestand {file} van de dropserver afgehaald\n".format(script=script,
+                                                                                                       date=ds, time=ts,
+                                                                                                       file=file)
             logfh.write(logline)
         sftph.remove_file(file)
 else:

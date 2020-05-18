@@ -15,11 +15,10 @@ props = dict(
     pkf=cfg['DBDump']["pkf"]
 )
 remote = sftp_key.SftpHandler(**props)
+remote.set_dir('IN')
 
 file_list = [file for file in os.listdir(source) if '.csv' in file]
 for file in file_list:
     logging.info("Copy {}".format(file))
     ffn = os.path.join(source, file)
     remote.load_file(ffn)
-
-remote.close_connection()
